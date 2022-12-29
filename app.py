@@ -13,7 +13,7 @@ from datetime import datetime
 import numpy as np
 import time
 import urllib3
-# from dash import Dash
+import pathlib
 
 
 def connect_url(url):
@@ -60,9 +60,9 @@ def data_preparing():
 
         # 过去28天感染
         # confirmed = pd.read_csv(confirmed_url)
-        basepath = path.dirname(__file__)
-        confirmed_path = basepath + '/datasets/time_series_covid19_confirmed_global.csv'
-        confirmed = pd.read_csv(confirmed_path)
+        basepath = pathlib.Path(__file__).parent.resolve()
+        #confirmed_path = basepath + '/datasets/time_series_covid19_confirmed_global.csv'
+        confirmed = pd.read_csv('./datasets/time_series_covid19_confirmed_global.csv')
         ll = [32070, 36552,42861,51014,59949,73299,90336,110003,130902,154106, 178858,205438,228507, 254814,282419, 305491, 329004, 353826, 374242, 396490, 415391, 433886, 451515, 474885, 495943, 515398, 545940, 556562, 571594]
         confirmed.iloc[confirmed[confirmed["Province/State"] == "Shanghai"].index, -29:] = ll
         confirmed = confirmed[(confirmed["Country/Region"] == "China") | (confirmed["Country/Region"] == "Taiwan*")]
@@ -113,8 +113,8 @@ def data_preparing():
 
         # 过去28天全部死亡
         # deaths = pd.read_csv(death_url)
-        dealth_path = basepath + '/datasets/time_series_covid19_deaths_global.csv'
-        deaths = pd.read_csv(dealth_path)
+        #dealth_path = basepath + '/datasets/time_series_covid19_deaths_global.csv'
+        deaths = pd.read_csv('./datasets/time_series_covid19_deaths_global.csv')
         deaths = deaths[(deaths["Country/Region"] == "China") | (deaths["Country/Region"] == "Taiwan*")]
         deaths.loc[deaths["Country/Region"] == 'Taiwan*', "Province/State"] = "Taiwan"
         deaths.drop(["Country/Region", "Lat", "Long"], inplace=True, axis=1)
@@ -130,16 +130,16 @@ def data_preparing():
 
         # 过去28天疫苗接种
         # vcc_df_orig = pd.read_csv(vcc_url)
-        vcc_path = basepath + '/datasets/time_series_covid19_vaccine_global.csv'
-        vcc_df_orig = pd.read_csv(vcc_path)
+        #vcc_path = basepath + '/datasets/time_series_covid19_vaccine_global.csv'
+        vcc_df_orig = pd.read_csv('./datasets/time_series_covid19_vaccine_global.csv')
         vcc_df = vcc_df_orig[(vcc_df_orig["Country_Region"] == "China") | (vcc_df_orig["Country_Region"] == "Taiwan*")]
         columns = ["Country_Region", "Report_Date_String", "People_partially_vaccinated", "People_fully_vaccinated"]
         vcc_df = vcc_df[columns]
-        vcc_df["Date"] = pd.to_datetime(vcc_df["Date"])
-        vcc_df = vcc_df[vcc_df["Date"] > vcc_df["Date"].max() - pd.Timedelta(28, "d")]
-        vcc_df.rename({'Date': 'Date'}, axis=1, inplace=True)
+        vcc_df["Report_Date_String"] = pd.to_datetime(vcc_df["Report_Date_String"])
+        vcc_df = vcc_df[vcc_df["Report_Date_String"] > vcc_df["Report_Date_String"].max() - pd.Timedelta(28, "d")]
+        vcc_df.rename({'Report_Date_String': 'Date'}, axis=1, inplace=True)
         vcc_df.dropna(inplace=True)
-        vcc_df = vcc_df.groupby(by=["Date"]).sum(["People_at_least_one_dose", "Doses_admin"])
+        vcc_df = vcc_df.groupby(by=["Date"]).sum(["People_partially_vaccinated", "People_fully_vaccinated"])
 
         return past28_confirmed, past28_deaths, vcc_df
     except ValueError:
@@ -277,16 +277,16 @@ last28_deaths = deaths.iloc[[0, -1], :]
 new28_increase_deaths = sum(last28_deaths.iloc[-1, :] - last28_deaths.iloc[-2, :])
 # 昨日新增疫苗接种人数
 past1_vcc_df = vcc.iloc[-1, :] - vcc.iloc[-2, :]
-past1_partial_vcc = int(past1_vcc_df["People_at_least_one_dose"])
-past1_full_vcc = int(past1_vcc_df["Doses_admin"])
+past1_partial_vcc = int(past1_vcc_df["People_partially_vaccinated"])
+past1_full_vcc = int(past1_vcc_df["People_fully_vaccinated"])
 # 过去28天新增疫苗接种人数
 past28_vcc_df = vcc.iloc[-1, :] - vcc.iloc[0, :]
-past28_partial_vcc = int(past28_vcc_df["People_at_least_one_dose"])
-past28_full_vcc = int(past28_vcc_df["Doses_admin"])
+past28_partial_vcc = int(past28_vcc_df["People_partially_vaccinated"])
+past28_full_vcc = int(past28_vcc_df["People_fully_vaccinated"])
 # 疫苗接种总人数
 all_vcc_df = vcc.iloc[-1, :]
-all_partial_vcc = int(all_vcc_df["People_at_least_one_dose"])
-all_full_vcc = int(all_vcc_df["Doses_admin"])
+all_partial_vcc = int(all_vcc_df["People_partially_vaccinated"])
+all_full_vcc = int(all_vcc_df["People_fully_vaccinated"])
 
 # fig = plot_indicator(new_increase_confirmed, new_increase_deaths, 
 #                     new28_increase_confirmed, new28_increase_deaths,
@@ -527,7 +527,7 @@ all_confirmed_opt = option
 basepath = path.dirname(__file__)
 filepath = path.abspath(path.join(basepath+'/static', 'china2.json'))
 # filepath = "E:/Docker/Projects/flask/flask-dash-app-master/app/dash/use_cases/pages/covid19/static/china2.json"
-with open(filepath, encoding='UTF-8') as json_file:
+with open('./static/china2.json', encoding='UTF-8') as json_file:
     china_map = json.load(json_file)
 
 new_confirmed_map_data = dash_echarts.DashECharts(
@@ -742,4 +742,4 @@ def init_callbacks(app):
         )
 
 if __name__ == '__main__':
-    app.run_server(debug=False, port=8518)
+    app.run_server(debug=False)
