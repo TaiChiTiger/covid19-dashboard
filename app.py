@@ -300,8 +300,8 @@ last2days_deaths = deaths.iloc[[-2, -1], :]
 
 
 # 建立仪表盘
-app = Dash(__name__, external_stylesheets=[dbc.themes.DARKLY], update_title='更新中...')
-app.title = '疫情概要'
+app = Dash(__name__, external_stylesheets=[dbc.themes.DARKLY], update_title='更新中...', title='疫情概要')
+app._favicon = ("covid_logo.png")
 server = app.server
 
 config = {"displayModeBar": False}
