@@ -1,5 +1,6 @@
 dash==2.1.0
 plotly==5.11.0
+urllib3==1.26.9
 numpy
 dash_bootstrap_components==1.0.3
 pandas
